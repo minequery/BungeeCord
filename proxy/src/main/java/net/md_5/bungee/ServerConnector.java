@@ -242,10 +242,17 @@ public class ServerConnector extends PacketHandler
                     break;
                 case 0:
                     // Server hello
-                    ch.write( PacketConstants.FML_REGISTER );
-                    ch.write( PacketConstants.FML_START_SERVER_HANDSHAKE );
-                    ch.write( new PluginMessage( "FML|HS", user.getFmlModData() ) );
-                    ch.write( new PluginMessage( "FML|HS", new byte[]{ -1, 2 } ) );
+                    if (user.getFmlModData() == null) {
+                        // If the user is not a mod user, then throw them off.
+                        user.disconnect( bungee.getTranslation( "connect_kick" ) + target.getName() + ": " + bungee.getTranslation( "connect_kick_modded" ) );
+                    } else {
+                        // Else, start the handshake
+                        ch.write( PacketConstants.FML_REGISTER );
+                        ch.write( PacketConstants.FML_START_SERVER_HANDSHAKE );
+                        ch.write( new PluginMessage( "FML|HS", user.getFmlModData() ) );
+                        ch.write( new PluginMessage( "FML|HS", new byte[]{ -1, 2 } ) );
+                    }
+                
                     break;
                 case 2:
                     // ModList
