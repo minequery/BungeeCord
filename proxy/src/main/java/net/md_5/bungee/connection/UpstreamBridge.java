@@ -19,6 +19,7 @@ import net.md_5.bungee.protocol.packet.ClientSettings;
 import net.md_5.bungee.protocol.packet.PluginMessage;
 import java.util.ArrayList;
 import java.util.List;
+import net.md_5.bungee.PacketConstants;
 import net.md_5.bungee.protocol.ProtocolConstants;
 import net.md_5.bungee.protocol.packet.TabCompleteResponse;
 
@@ -36,6 +37,9 @@ public class UpstreamBridge extends PacketHandler
         BungeeCord.getInstance().addConnection( con );
         con.getTabList().onConnect();
         con.unsafe().sendPacket( BungeeCord.getInstance().registerChannels() );
+        
+        con.unsafe().sendPacket(PacketConstants.FML_REGISTER );
+        con.unsafe().sendPacket(PacketConstants.FML_START_CLIENT_HANDSHAKE);
     }
 
     @Override
