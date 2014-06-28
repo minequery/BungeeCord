@@ -19,10 +19,14 @@ import net.md_5.bungee.protocol.AbstractPacketHandler;
 @EqualsAndHashCode(callSuper = false)
 public class PluginMessage extends DefinedPacket
 {
-
     private String tag;
     private byte[] data;
 
+    /**
+     * Allow this packet to be sent as an "extended" packet.
+     */
+    private boolean allowExtendedPacket = false;
+        
     @Override
     public void read(ByteBuf buf)
     {
@@ -34,7 +38,7 @@ public class PluginMessage extends DefinedPacket
     public void write(ByteBuf buf)
     {
         writeString( tag, buf );
-        writeArray( data, buf );
+        writeArray( data, buf, allowExtendedPacket );
     }
 
     @Override

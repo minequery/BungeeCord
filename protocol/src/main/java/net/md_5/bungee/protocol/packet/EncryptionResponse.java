@@ -28,8 +28,8 @@ public class EncryptionResponse extends DefinedPacket
     @Override
     public void write(ByteBuf buf)
     {
-        writeArray( sharedSecret, buf );
-        writeArray( verifyToken, buf );
+        writeArray( sharedSecret, buf, false );
+        writeArray( verifyToken, buf, false );
     }
 
     @Override
