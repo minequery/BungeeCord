@@ -17,20 +17,20 @@ import net.md_5.bungee.chat.ComponentSerializer;
 import net.md_5.bungee.connection.CancelSendSignal;
 import net.md_5.bungee.connection.DownstreamBridge;
 import net.md_5.bungee.connection.LoginResult;
-import net.md_5.bungee.netty.HandlerBoss;
 import net.md_5.bungee.netty.ChannelWrapper;
+import net.md_5.bungee.netty.HandlerBoss;
 import net.md_5.bungee.netty.PacketHandler;
-import net.md_5.bungee.protocol.MinecraftOutput;
 import net.md_5.bungee.protocol.DefinedPacket;
+import net.md_5.bungee.protocol.MinecraftOutput;
 import net.md_5.bungee.protocol.Protocol;
 import net.md_5.bungee.protocol.packet.EncryptionRequest;
 import net.md_5.bungee.protocol.packet.Handshake;
+import net.md_5.bungee.protocol.packet.Kick;
 import net.md_5.bungee.protocol.packet.Login;
+import net.md_5.bungee.protocol.packet.LoginSuccess;
+import net.md_5.bungee.protocol.packet.PluginMessage;
 import net.md_5.bungee.protocol.packet.Respawn;
 import net.md_5.bungee.protocol.packet.ScoreboardObjective;
-import net.md_5.bungee.protocol.packet.PluginMessage;
-import net.md_5.bungee.protocol.packet.Kick;
-import net.md_5.bungee.protocol.packet.LoginSuccess;
 
 @RequiredArgsConstructor
 public class ServerConnector extends PacketHandler
@@ -41,6 +41,15 @@ public class ServerConnector extends PacketHandler
     private final UserConnection user;
     private final BungeeServerInfo target;
     private State thisState = State.LOGIN_SUCCESS;
+
+    /**
+     * A flag that indicates whether the server that is being connected to has
+     * started a FML handshake. Used to determine whether to send an empty mod list
+     * and ID list.
+     *
+     * We start as false, as we have no idea if we are connecting to the FML server.
+     */
+    private boolean serverIsFml = false;
 
     private enum State
     {
@@ -97,7 +106,7 @@ public class ServerConnector extends PacketHandler
         Preconditions.checkState( thisState == State.LOGIN_SUCCESS, "Not expecting LOGIN_SUCCESS" );
         ch.setProtocol( Protocol.GAME );
         thisState = State.LOGIN;
-        
+
         throw CancelSendSignal.INSTANCE;
     }
 
@@ -105,6 +114,16 @@ public class ServerConnector extends PacketHandler
     public void handle(Login login) throws Exception
     {
         Preconditions.checkState( thisState == State.LOGIN, "Not expecting LOGIN" );
+
+        // If we get here, and no Forge handshake has taken place, then we have a vanilla server
+        // In this case, if the user is a Forge user, send the mod list and ID payloads.
+        if (!serverIsFml && user.getFmlModData() != null) {
+            // Send empty mod and ID list.
+            user.unsafe().sendPacket( PacketConstants.FML_EMPTY_MOD_LIST );
+
+            // TODO: Detect version of Minecraft. Currently only supports Forge on 1.7
+            user.unsafe().sendPacket( PacketConstants.FML_DEFAULT_IDS_17 );
+        }
 
         ServerConnection server = new ServerConnection( ch, target );
         ServerConnectedEvent event = new ServerConnectedEvent( user, server );
@@ -233,6 +252,9 @@ public class ServerConnector extends PacketHandler
     {
         if(pluginMessage.getTag().equals("FML|HS"))
         {
+            // If we get here, we have a FML server. Flag it up.
+            serverIsFml = true;
+
             byte state = pluginMessage.getData()[ 0 ];
             switch ( state )
             {
@@ -246,13 +268,13 @@ public class ServerConnector extends PacketHandler
                         // If the user is not a mod user, then throw them off.
                         user.disconnect( bungee.getTranslation( "connect_kick" ) + target.getName() + ": " + bungee.getTranslation( "connect_kick_modded" ) );
                     } else {
-                        // Else, start the handshake
+                        // Else, start the handshake. Do not send the Hello to the client, as this will cause a cast error.
                         ch.write( PacketConstants.FML_REGISTER );
                         ch.write( PacketConstants.FML_START_SERVER_HANDSHAKE );
                         ch.write( new PluginMessage( "FML|HS", user.getFmlModData() ) );
                         ch.write( new PluginMessage( "FML|HS", new byte[]{ -1, 2 } ) );
                     }
-                
+
                     break;
                 case 2:
                     // ModList

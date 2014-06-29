@@ -411,7 +411,7 @@ public class InitialHandler extends PacketHandler implements PendingConnection
                             {
                                 server = bungee.getServerInfo( listener.getDefaultServer() );
                             }
-                            
+
                             userCon.connect( server, null, true );
 
                             thisState = State.FINISHED;
