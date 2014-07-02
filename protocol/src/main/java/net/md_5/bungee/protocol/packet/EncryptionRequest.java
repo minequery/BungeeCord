@@ -31,8 +31,8 @@ public class EncryptionRequest extends DefinedPacket
     public void write(ByteBuf buf)
     {
         writeString( serverId, buf );
-        writeArray( publicKey, buf );
-        writeArray( verifyToken, buf );
+        writeArray( publicKey, buf, false );
+        writeArray( verifyToken, buf, false );
     }
 
     @Override

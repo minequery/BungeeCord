@@ -49,7 +49,7 @@ public class ServerConnector extends PacketHandler
      *
      * We start as false, as we have no idea if we are connecting to the FML server.
      */
-    private boolean serverIsFml = false;
+    private boolean serverIsForge = false;
 
     private enum State
     {
@@ -117,7 +117,7 @@ public class ServerConnector extends PacketHandler
 
         // If we get here, and no Forge handshake has taken place, then we have a vanilla server
         // In this case, if the user is a Forge user, send the mod list and ID payloads.
-        if (!serverIsFml && user.getFmlModData() != null) {
+        if (!serverIsForge && user.isForgeUser()) {
             // Send empty mod and ID list.
             user.unsafe().sendPacket( PacketConstants.FML_EMPTY_MOD_LIST );
 
@@ -163,7 +163,7 @@ public class ServerConnector extends PacketHandler
 
             MinecraftOutput out = new MinecraftOutput();
             out.writeStringUTF8WithoutLengthHeaderBecauseDinnerboneStuffedUpTheMCBrandPacket( ProxyServer.getInstance().getName() + " (" + ProxyServer.getInstance().getVersion() + ")" );
-            user.unsafe().sendPacket( new PluginMessage( "MC|Brand", out.toArray() ) );
+            user.unsafe().sendPacket( new PluginMessage( "MC|Brand", out.toArray(), serverIsForge ) );
         } else
         {
             user.getTabList().onServerChange();
@@ -253,7 +253,7 @@ public class ServerConnector extends PacketHandler
         if(pluginMessage.getTag().equals("FML|HS"))
         {
             // If we get here, we have a FML server. Flag it up.
-            serverIsFml = true;
+            serverIsForge = true;
 
             byte state = pluginMessage.getData()[ 0 ];
             switch ( state )
@@ -264,15 +264,15 @@ public class ServerConnector extends PacketHandler
                     break;
                 case 0:
                     // Server hello
-                    if (user.getFmlModData() == null) {
+                    if (!user.isForgeUser()) {
                         // If the user is not a mod user, then throw them off.
                         user.disconnect( bungee.getTranslation( "connect_kick" ) + target.getName() + ": " + bungee.getTranslation( "connect_kick_modded" ) );
                     } else {
                         // Else, start the handshake. Do not send the Hello to the client, as this will cause a cast error.
                         ch.write( PacketConstants.FML_REGISTER );
                         ch.write( PacketConstants.FML_START_SERVER_HANDSHAKE );
-                        ch.write( new PluginMessage( "FML|HS", user.getFmlModData() ) );
-                        ch.write( new PluginMessage( "FML|HS", new byte[]{ -1, 2 } ) );
+                        ch.write( new PluginMessage( "FML|HS", user.getFmlModData(), true ) );
+                        ch.write( new PluginMessage( "FML|HS", new byte[]{ -1, 2 }, true ) );
                     }
 
                     break;
@@ -283,7 +283,7 @@ public class ServerConnector extends PacketHandler
                 case 3:
                     // IdList
                     user.sendData( "FML|HS", pluginMessage.getData() );
-                    ch.write( new PluginMessage( "FML|HS", new byte[]{ -1, 2 } ) );
+                    ch.write( new PluginMessage( "FML|HS", new byte[]{ -1, 2 }, true ) );
                     break;
             }
             throw CancelSendSignal.INSTANCE;

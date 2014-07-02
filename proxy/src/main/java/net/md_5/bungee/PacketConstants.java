@@ -15,17 +15,17 @@ public class PacketConstants
     public static final PluginMessage FORGE_MOD_REQUEST = new PluginMessage( "FML", new byte[]
     {
         0, 0, 0, 0, 0, 2
-    } );
-    public static final PluginMessage I_AM_BUNGEE = new PluginMessage( "BungeeCord", new byte[ 0 ] );
+    }, false );
+    public static final PluginMessage I_AM_BUNGEE = new PluginMessage( "BungeeCord", new byte[ 0 ], false );
 
     // Forge
-    public static final PluginMessage FML_REGISTER = new PluginMessage( "REGISTER", "FML|HS".getBytes() );
-    public static final PluginMessage FML_START_CLIENT_HANDSHAKE = new PluginMessage( "FML|HS", new byte[] { 0, 1 } );
-    public static final PluginMessage FML_START_SERVER_HANDSHAKE = new PluginMessage( "FML|HS", new byte[] { 1, 1 } );
-    public static final PluginMessage FML_EMPTY_MOD_LIST = new PluginMessage( "FML|HS", new byte[] { 2, 0 } );
+    public static final PluginMessage FML_REGISTER = new PluginMessage( "REGISTER", "FML|HS".getBytes(), false );
+    public static final PluginMessage FML_START_CLIENT_HANDSHAKE = new PluginMessage( "FML|HS", new byte[] { 0, 1 }, false );
+    public static final PluginMessage FML_START_SERVER_HANDSHAKE = new PluginMessage( "FML|HS", new byte[] { 1, 1 }, false );
+    public static final PluginMessage FML_EMPTY_MOD_LIST = new PluginMessage( "FML|HS", new byte[] { 2, 0 }, false );
     
     // Vanilla blocks. Obtained though packet sniffing. See the ForgeConstants class
-    public static final PluginMessage FML_DEFAULT_IDS_17 = new PluginMessage( "FML|HS", getVanillaBlocks17() );
+    public static final PluginMessage FML_DEFAULT_IDS_17 = new PluginMessage( "FML|HS", getVanillaBlocks17(), true);
     
     /**
      * Gets the Vanilla Blocks ID list for Minecraft 1.7 from the ForgeConstants class,

@@ -29,11 +29,14 @@ public abstract class DefinedPacket
         return new String( b, Charsets.UTF_8 );
     }
 
-    public static void writeArray(byte[] b, ByteBuf buf)
+    public static void writeArray(byte[] b, ByteBuf buf, boolean allowExtended)
     {
         // (Integer.MAX_VALUE & 0x7FFFFF) = 8388607
-        Preconditions.checkArgument( b.length <= (Integer.MAX_VALUE & 0x7FFFFF), "Cannot send array longer than 8388607 (got %s bytes)", b.length );
-        
+        if (allowExtended) {
+            Preconditions.checkArgument( b.length <= (Integer.MAX_VALUE & 0x7FFFFF), "Cannot send array longer than 8388607 (got %s bytes)", b.length );
+        } else {
+            Preconditions.checkArgument( b.length <= Short.MAX_VALUE, "Cannot send array longer than Short.MAX_VALUE (got %s bytes)", b.length );
+        }
         // Write a 2 or 3 byte number that represents the length of the packet. (3 byte "shorts" for Forge only)
         // No vanilla packet should give a 3 byte packet, this method will still retain vanilla behaviour.
         writeVarShort(buf, b.length);
@@ -45,10 +48,10 @@ public abstract class DefinedPacket
         // Read in a 2 or 3 byte number that represents the length of the packet. (3 byte "shorts" for Forge only)
         // No vanilla packet should give a 3 byte packet, this method will still retain vanilla behaviour.
         int len = readVarShort(buf);
-        
+
         // (Integer.MAX_VALUE & 0x7FFFFF) = 8388607
         Preconditions.checkArgument( len <= (Integer.MAX_VALUE & 0x7FFFFF), "Cannot receive array longer than 8388607 (got %s bytes)", len );
-        
+
         byte[] ret = new byte[ len ];
         buf.readBytes( ret );
         return ret;
@@ -93,11 +96,11 @@ public abstract class DefinedPacket
         {
             // Remove the 16th bit that we are not interested in.
             low = low & 0x7FFF;
-            
+
             // Get the high byte.
             high = buf.readUnsignedByte();
         }
-        
+
         // Shift the high byte left 15 bits, bitwise OR it with the lower short, then you have your length!
         return ((high & 0xFF) << 15) | low;
     }
@@ -115,10 +118,10 @@ public abstract class DefinedPacket
     {
         // Get the first 15 bits of the integer (> 32767).
         int low = toWrite & 0x7FFF;
-        
+
         // Get the next byte's worth of information, shift it down to the lowest byte.
         int high = ( toWrite & 0x7F8000 ) >> 15;
-        
+
         // If we have a significant number in the "high" bit, then we need an extra bit.
         if (high != 0)
         {
@@ -127,7 +130,7 @@ public abstract class DefinedPacket
             // for an "extended short".
             low = low | 0x8000;
         }
-        
+
         // We now write whatever is in the low bit.
         buf.writeShort(low);
         if (high != 0)
