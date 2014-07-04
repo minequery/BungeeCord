@@ -392,6 +392,10 @@ public class InitialHandler extends PacketHandler implements PendingConnection
                             }
                             ch.setProtocol( Protocol.GAME );
 
+                            // Start FML registration. Ignored by vanilla clients.
+                            unsafe.sendPacket(PacketConstants.FML_REGISTER );
+                            unsafe.sendPacket(PacketConstants.FML_START_CLIENT_HANDSHAKE);
+
                             UserConnection userCon = new UserConnection( bungee, ch, getName(), InitialHandler.this );
                             userCon.init();
 

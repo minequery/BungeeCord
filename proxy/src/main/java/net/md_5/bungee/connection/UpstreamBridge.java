@@ -29,6 +29,8 @@ public class UpstreamBridge extends PacketHandler
     private final ProxyServer bungee;
     private final UserConnection con;
 
+    private boolean sentInitialAck = false;
+
     public UpstreamBridge(ProxyServer bungee, UserConnection con)
     {
         this.bungee = bungee;
@@ -37,9 +39,6 @@ public class UpstreamBridge extends PacketHandler
         BungeeCord.getInstance().addConnection( con );
         con.getTabList().onConnect();
         con.unsafe().sendPacket( BungeeCord.getInstance().registerChannels() );
-        
-        con.unsafe().sendPacket(PacketConstants.FML_REGISTER );
-        con.unsafe().sendPacket(PacketConstants.FML_START_CLIENT_HANDSHAKE);
     }
 
     @Override
@@ -155,9 +154,21 @@ public class UpstreamBridge extends PacketHandler
             byte state = pluginMessage.getData()[ 0 ];
             switch ( state )
             {
+                case -1:
+                    // ACK
+                    if (!sentInitialAck) {
+                        // We are only interested in the first "ACK"
+                        sentInitialAck = true;
+                        
+                        // Send default block list
+                        con.unsafe().sendPacket( PacketConstants.FML_DEFAULT_IDS_17 );
+                    }
+
+                    break;
                 case 2:
                     // Mod List
                     con.setFmlModData(pluginMessage.getData());
+                    con.unsafe().sendPacket( PacketConstants.FML_EMPTY_MOD_LIST );
                     break;
             }
 

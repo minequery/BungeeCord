@@ -3,6 +3,9 @@ package net.md_5.bungee;
 import com.google.common.base.Preconditions;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.Timer;
+import java.util.TimerTask;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.ProxyServer;
@@ -50,6 +53,9 @@ public class ServerConnector extends PacketHandler
      * We start as false, as we have no idea if we are connecting to the FML server.
      */
     private boolean serverIsForge = false;
+
+    @Getter
+    private Timer delayedPacketTimer = null;
 
     private enum State
     {
@@ -265,8 +271,28 @@ public class ServerConnector extends PacketHandler
                 case 0:
                     // Server hello
                     if (!user.isForgeUser()) {
-                        // If the user is not a mod user, then throw them off.
-                        user.disconnect( bungee.getTranslation( "connect_kick" ) + target.getName() + ": " + bungee.getTranslation( "connect_kick_modded" ) );
+                        user.setDelayedPacket( pluginMessage );
+                        user.setDelayedPacketHandler( this );
+
+                        // If we cannot identify them as a forge user, then wait a few moments, as we might be waiting for the 
+                        // user to complete the forge handshake. 
+                        delayedPacketTimer = new Timer();
+                        delayedPacketTimer.schedule(new TimerTask() {
+
+                            @Override
+                            public void run()
+                            {
+                                delayedPacketTimer.cancel();
+
+                                // If this wasn't cancelled, then continue anyway.
+                                if (user.isForgeUser()) {
+                                    return;
+                                }
+
+                                // If the user is not a mod user, then throw them off.
+                                user.disconnect( bungee.getTranslation( "connect_kick" ) + target.getName() + ": " + bungee.getTranslation( "connect_kick_modded" ) );
+                            }
+                        }, 5000); // TODO: Is this reasonable?
                     } else {
                         // Else, start the handshake. Do not send the Hello to the client, as this will cause a cast error.
                         ch.write( PacketConstants.FML_REGISTER );
