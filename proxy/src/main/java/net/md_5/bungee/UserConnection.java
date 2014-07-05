@@ -111,12 +111,19 @@ public final class UserConnection implements ProxiedPlayer
     @Getter
     private byte[] fmlModData;
     
+    /**
+     * Holds a PluginMessage that needs to be processed once Forge has started
+     * its handshake.
+     */
     @Setter(AccessLevel.PACKAGE)
-    private PluginMessage delayedPacket = null;
+    private PluginMessage delayedServerPacket = null;
     
+    /**
+     * Holds the class that will handler the PluginMessage that needs to be processed 
+     * once Forge has started its handshake.
+     */
     @Setter(AccessLevel.PACKAGE)
-    private PacketHandler delayedPacketHandler = null;
-    
+    private PacketHandler delayedServerPacketHandler = null;
     /*========================================================================*/
     private final Unsafe unsafe = new Unsafe()
     {
@@ -467,9 +474,9 @@ public final class UserConnection implements ProxiedPlayer
         fmlModData = value;
 
         // If we have a delayed packet, process it again.
-        if (delayedPacketHandler != null && delayedPacket != null) {
-            if (delayedPacketHandler instanceof ServerConnector) {
-                ServerConnector sc = (ServerConnector)delayedPacketHandler;
+        if (delayedServerPacketHandler != null && delayedServerPacket != null) {
+            if (delayedServerPacketHandler instanceof ServerConnector) {
+                ServerConnector sc = (ServerConnector)delayedServerPacketHandler;
                 if ( sc.getDelayedPacketTimer() != null) {
                     sc.getDelayedPacketTimer().cancel();
                 }
@@ -477,12 +484,12 @@ public final class UserConnection implements ProxiedPlayer
 
             try
             {
-                delayedPacketHandler.handle( delayedPacket );
+                delayedServerPacketHandler.handle( delayedServerPacket );
             }
             catch (Exception ex) {
                 try
                 {
-                    delayedPacketHandler.exception( ex );
+                    delayedServerPacketHandler.exception( ex );
                 }
                 catch (Exception ex2)
                 {
@@ -491,8 +498,16 @@ public final class UserConnection implements ProxiedPlayer
             }
             
             // We no longer want the reference to these packets
-            delayedPacketHandler = null;
-            delayedPacket = null;
+            delayedServerPacketHandler = null;
+            delayedServerPacket = null;
         }
+    }
+    
+    public void sendVanillaForgeData() {
+        // Send empty mod and ID list.
+        this.unsafe().sendPacket( PacketConstants.FML_EMPTY_MOD_LIST );
+
+        // TODO: Detect version of Minecraft. Currently only supports Forge on 1.7
+        this.unsafe().sendPacket( PacketConstants.FML_DEFAULT_IDS_17 );
     }
 }

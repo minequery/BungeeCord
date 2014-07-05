@@ -120,17 +120,7 @@ public class ServerConnector extends PacketHandler
     public void handle(Login login) throws Exception
     {
         Preconditions.checkState( thisState == State.LOGIN, "Not expecting LOGIN" );
-
-        // If we get here, and no Forge handshake has taken place, then we have a vanilla server
-        // In this case, if the user is a Forge user, send the mod list and ID payloads.
-        if (!serverIsForge && user.isForgeUser()) {
-            // Send empty mod and ID list.
-            user.unsafe().sendPacket( PacketConstants.FML_EMPTY_MOD_LIST );
-
-            // TODO: Detect version of Minecraft. Currently only supports Forge on 1.7
-            user.unsafe().sendPacket( PacketConstants.FML_DEFAULT_IDS_17 );
-        }
-
+        
         ServerConnection server = new ServerConnection( ch, target );
         ServerConnectedEvent event = new ServerConnectedEvent( user, server );
         bungee.getPluginManager().callEvent( event );
@@ -153,6 +143,13 @@ public class ServerConnector extends PacketHandler
         if ( user.getSettings() != null )
         {
             ch.write( user.getSettings() );
+        }
+
+        // If we get here, and no Forge handshake has taken place, then we have a vanilla server
+        // In this case, send the empty mod list and vanilla ID payloads to the server.
+        // This is the last moment we can do this. 
+        if (!serverIsForge) {
+           user.sendVanillaForgeData();
         }
 
         if ( user.getServer() == null )
@@ -271,8 +268,8 @@ public class ServerConnector extends PacketHandler
                 case 0:
                     // Server hello
                     if (!user.isForgeUser()) {
-                        user.setDelayedPacket( pluginMessage );
-                        user.setDelayedPacketHandler( this );
+                        user.setDelayedServerPacket( pluginMessage );
+                        user.setDelayedServerPacketHandler( this );
 
                         // If we cannot identify them as a forge user, then wait a few moments, as we might be waiting for the 
                         // user to complete the forge handshake. 
@@ -289,22 +286,38 @@ public class ServerConnector extends PacketHandler
                                     return;
                                 }
 
-                                // If the user is not a mod user, then throw them off.
-                                user.disconnect( bungee.getTranslation( "connect_kick" ) + target.getName() + ": " + bungee.getTranslation( "connect_kick_modded" ) );
+                                try {
+                                    // If the user is not a mod user, then throw them off.
+                                    user.getPendingConnects().remove( target );
+                                    ch.close();
+                                    
+                                    String message = bungee.getTranslation( "connect_kick" ) + target.getName() + ": " + bungee.getTranslation( "connect_kick_modded" );
+                                    if ( user.getServer() == null )
+                                    {
+                                        user.disconnect( message );
+                                    } else
+                                    {
+                                        user.sendMessage( ChatColor.RED + message );
+                                    }
+                                    
+                                }
+                                finally
+                                {
+                                }
                             }
-                        }, 5000); // TODO: Is this reasonable?
+                        }, 2000); // TODO: Is this reasonable?
                     } else {
                         // Else, start the handshake. Do not send the Hello to the client, as this will cause a cast error.
                         ch.write( PacketConstants.FML_REGISTER );
                         ch.write( PacketConstants.FML_START_SERVER_HANDSHAKE );
                         ch.write( new PluginMessage( "FML|HS", user.getFmlModData(), true ) );
-                        ch.write( new PluginMessage( "FML|HS", new byte[]{ -1, 2 }, true ) );
                     }
 
                     break;
                 case 2:
                     // ModList
                     user.sendData( "FML|HS", pluginMessage.getData() );
+                    ch.write( new PluginMessage( "FML|HS", new byte[]{ -1, 2 }, true ) );
                     break;
                 case 3:
                     // IdList

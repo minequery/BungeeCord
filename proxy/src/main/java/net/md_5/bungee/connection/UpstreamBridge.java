@@ -154,21 +154,11 @@ public class UpstreamBridge extends PacketHandler
             byte state = pluginMessage.getData()[ 0 ];
             switch ( state )
             {
-                case -1:
-                    // ACK
-                    if (!sentInitialAck) {
-                        // We are only interested in the first "ACK"
-                        sentInitialAck = true;
-                        
-                        // Send default block list
-                        con.unsafe().sendPacket( PacketConstants.FML_DEFAULT_IDS_17 );
-                    }
-
-                    break;
                 case 2:
-                    // Mod List
+                    // Mod List. The server will actually pass the mod list down to the client
+                    // (from the FML server, or the empty mod list from Bungee), so no need to send it
+                    // here. The "setFmlModData" method will set it all in motion.
                     con.setFmlModData(pluginMessage.getData());
-                    con.unsafe().sendPacket( PacketConstants.FML_EMPTY_MOD_LIST );
                     break;
             }
 
