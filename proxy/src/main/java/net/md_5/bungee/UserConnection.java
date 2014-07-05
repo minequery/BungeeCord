@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Timer;
 import java.util.UUID;
 import java.util.logging.Level;
 import lombok.AccessLevel;
@@ -124,6 +125,13 @@ public final class UserConnection implements ProxiedPlayer
      */
     @Setter(AccessLevel.PACKAGE)
     private PacketHandler delayedServerPacketHandler = null;
+    
+    /**
+     * Holds the @{link Timer} object that handles the Forge timeout.
+     */
+    @Getter
+    @Setter(AccessLevel.PACKAGE)
+    private Timer delayedServerPacketTimeoutTimer = null;
     /*========================================================================*/
     private final Unsafe unsafe = new Unsafe()
     {
@@ -475,26 +483,18 @@ public final class UserConnection implements ProxiedPlayer
 
         // If we have a delayed packet, process it again.
         if (delayedServerPacketHandler != null && delayedServerPacket != null) {
-            if (delayedServerPacketHandler instanceof ServerConnector) {
-                ServerConnector sc = (ServerConnector)delayedServerPacketHandler;
-                if ( sc.getDelayedPacketTimer() != null) {
-                    sc.getDelayedPacketTimer().cancel();
-                }
+            if (delayedServerPacketTimeoutTimer != null) {
+                delayedServerPacketTimeoutTimer.cancel();
+                delayedServerPacketTimeoutTimer = null;
             }
-
+            
             try
             {
                 delayedServerPacketHandler.handle( delayedServerPacket );
             }
             catch (Exception ex) {
-                try
-                {
-                    delayedServerPacketHandler.exception( ex );
-                }
-                catch (Exception ex2)
-                {
-                    // I have no idea what to do here.
-                }
+                // This is used to swallow the CancelSendSignal.INSTANCE exception that
+                // will occur, as we are acutally handling this outside of the Netty workflow.
             }
             
             // We no longer want the reference to these packets

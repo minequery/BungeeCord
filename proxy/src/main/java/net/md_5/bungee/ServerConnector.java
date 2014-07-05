@@ -54,9 +54,6 @@ public class ServerConnector extends PacketHandler
      */
     private boolean serverIsForge = false;
 
-    @Getter
-    private Timer delayedPacketTimer = null;
-
     private enum State
     {
         LOGIN_SUCCESS, ENCRYPT_RESPONSE, LOGIN, FINISHED;
@@ -120,7 +117,7 @@ public class ServerConnector extends PacketHandler
     public void handle(Login login) throws Exception
     {
         Preconditions.checkState( thisState == State.LOGIN, "Not expecting LOGIN" );
-        
+
         ServerConnection server = new ServerConnection( ch, target );
         ServerConnectedEvent event = new ServerConnectedEvent( user, server );
         bungee.getPluginManager().callEvent( event );
@@ -271,15 +268,21 @@ public class ServerConnector extends PacketHandler
                         user.setDelayedServerPacket( pluginMessage );
                         user.setDelayedServerPacketHandler( this );
 
-                        // If we cannot identify them as a forge user, then wait a few moments, as we might be waiting for the 
+                        // If we cannot identify them as a forge user, then wait a couple of seconds, as we might be waiting for the 
                         // user to complete the forge handshake. 
-                        delayedPacketTimer = new Timer();
-                        delayedPacketTimer.schedule(new TimerTask() {
+                        Timer timer = new Timer();
+                        timer.schedule(new TimerTask() {
 
                             @Override
                             public void run()
                             {
-                                delayedPacketTimer.cancel();
+                                // Kill the timer so that it does not run again.
+                                Timer timer = user.getDelayedServerPacketTimeoutTimer();
+                                if (timer != null) {
+                                    timer.cancel();
+                                }
+
+                                user.setDelayedServerPacketTimeoutTimer( null );
 
                                 // If this wasn't cancelled, then continue anyway.
                                 if (user.isForgeUser()) {
@@ -290,22 +293,21 @@ public class ServerConnector extends PacketHandler
                                     // If the user is not a mod user, then throw them off.
                                     user.getPendingConnects().remove( target );
                                     ch.close();
-                                    
+
                                     String message = bungee.getTranslation( "connect_kick" ) + target.getName() + ": " + bungee.getTranslation( "connect_kick_modded" );
-                                    if ( user.getServer() == null )
-                                    {
+                                    if ( user.getServer() == null ) {
                                         user.disconnect( message );
-                                    } else
-                                    {
+                                    } else {
                                         user.sendMessage( ChatColor.RED + message );
                                     }
-                                    
                                 }
                                 finally
                                 {
                                 }
                             }
                         }, 2000); // TODO: Is this reasonable?
+                        
+                        user.setDelayedServerPacketTimeoutTimer( timer );
                     } else {
                         // Else, start the handshake. Do not send the Hello to the client, as this will cause a cast error.
                         ch.write( PacketConstants.FML_REGISTER );
