@@ -148,17 +148,8 @@ public class UpstreamBridge extends PacketHandler
         // We handle forge handshake messages
         if ( pluginMessage.getTag().equals( "FML|HS" ) )
         {
-            byte state = pluginMessage.getData()[ 0 ];
-            switch ( state )
-            {
-                case 2:
-                    // Mod List. The server will actually pass the mod list down to the client
-                    // (from the FML server, or the empty mod list from Bungee), so no need to send it
-                    // here. The "setFmlModData" method will set it all in motion.
-                    con.setFmlModData(pluginMessage.getData());
-                    break;
-            }
-
+            // Let our forge client handler deal with this packet.
+            con.getForgeHandshakeHandler().handle( pluginMessage );
             throw CancelSendSignal.INSTANCE;
         }
 

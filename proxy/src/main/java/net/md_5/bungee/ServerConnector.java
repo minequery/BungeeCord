@@ -5,7 +5,6 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.Timer;
 import java.util.TimerTask;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.ProxyServer;
@@ -20,6 +19,7 @@ import net.md_5.bungee.chat.ComponentSerializer;
 import net.md_5.bungee.connection.CancelSendSignal;
 import net.md_5.bungee.connection.DownstreamBridge;
 import net.md_5.bungee.connection.LoginResult;
+import net.md_5.bungee.forge.ForgeConstants;
 import net.md_5.bungee.netty.ChannelWrapper;
 import net.md_5.bungee.netty.HandlerBoss;
 import net.md_5.bungee.netty.PacketHandler;
@@ -44,6 +44,9 @@ public class ServerConnector extends PacketHandler
     private final UserConnection user;
     private final BungeeServerInfo target;
     private State thisState = State.LOGIN_SUCCESS;
+    
+    private PluginMessage modList = ForgeConstants.FML_EMPTY_MOD_LIST;
+    private PluginMessage idList = ForgeConstants.FML_DEFAULT_IDS_17;
 
     /**
      * A flag that indicates whether the server that is being connected to has
@@ -142,15 +145,19 @@ public class ServerConnector extends PacketHandler
             ch.write( user.getSettings() );
         }
 
-        // If we get here, and no Forge handshake has taken place, then we have a vanilla server
-        // In this case, send the empty mod list and vanilla ID payloads to the server.
-        // This is the last moment we can do this. 
-        if (!serverIsForge) {
-           user.sendVanillaForgeData();
-        }
-
         if ( user.getServer() == null )
         {
+            if (!serverIsForge && !user.getForgeHandshakeHandler().isHandshakeComplete()) {
+                // Set the mod and ID list data for the forge handshake. If we are
+                // logging onto a Vanilla server, we can't assume that the user isn't Forge,
+                // and that the handshake will have completed by now, so set it for everyone.
+                //
+                // If the user is forge, then we have to do the handshake much earlier. See the 
+                // plugin message handler.
+                user.getForgeHandshakeHandler().setServerModList( modList );
+                user.getForgeHandshakeHandler().setServerIdList( idList );
+            }
+                    
             // Once again, first connection
             user.setClientEntityId( login.getEntityId() );
             user.setServerEntityId( login.getEntityId() );
@@ -166,6 +173,17 @@ public class ServerConnector extends PacketHandler
             user.unsafe().sendPacket( new PluginMessage( "MC|Brand", out.toArray(), serverIsForge ) );
         } else
         {
+            // If we already have a completed handshake, we need to reset the handshake now. We then set the
+            // vanilla forge data. This should be handled automatically by the handshake handler.
+            if (user.getForgeHandshakeHandler().isHandshakeComplete()) {
+                user.getForgeHandshakeHandler().resetHandshake();
+                
+                // Set the mod and ID list data for the handshake. By this point, we know that the user is a Forge user,
+                // so we just set it in these cases.
+                user.getForgeHandshakeHandler().setServerModList( modList );
+                user.getForgeHandshakeHandler().setServerIdList(idList );
+            }
+            
             user.getTabList().onServerChange();
 
             Scoreboard serverScoreboard = user.getServerSentScoreboard();
@@ -253,15 +271,12 @@ public class ServerConnector extends PacketHandler
         if(pluginMessage.getTag().equals("FML|HS"))
         {
             // If we get here, we have a FML server. Flag it up.
+            // We'll handle the user handshake later.
             serverIsForge = true;
-
+            
             byte state = pluginMessage.getData()[ 0 ];
             switch ( state )
             {
-                case -1:
-                    // ACK
-                    user.sendData( "FML|HS", pluginMessage.getData() );
-                    break;
                 case 0:
                     // Server hello
                     if (!user.isForgeUser()) {
@@ -309,21 +324,32 @@ public class ServerConnector extends PacketHandler
                         
                         user.setDelayedServerPacketTimeoutTimer( timer );
                     } else {
-                        // Else, start the handshake. Do not send the Hello to the client, as this will cause a cast error.
-                        ch.write( PacketConstants.FML_REGISTER );
-                        ch.write( PacketConstants.FML_START_SERVER_HANDSHAKE );
+                        ch.write( ForgeConstants.FML_REGISTER );
+                        ch.write( ForgeConstants.FML_START_SERVER_HANDSHAKE );
                         ch.write( new PluginMessage( "FML|HS", user.getFmlModData(), true ) );
                     }
 
                     break;
                 case 2:
                     // ModList
-                    user.sendData( "FML|HS", pluginMessage.getData() );
+                    if (user.getServer() == null) {
+                        // Connecting to the initial server - send handshake as normal.
+                        user.getForgeHandshakeHandler().setServerModList( pluginMessage );
+                    } else {
+                        // If we are switching servers, we store the message temporarily, as at this point, we do not know if there 
+                        // have been any mod rejections, and we don't want to put the client in a weird state.
+                        this.modList = pluginMessage;
+                    }
                     ch.write( new PluginMessage( "FML|HS", new byte[]{ -1, 2 }, true ) );
                     break;
                 case 3:
                     // IdList
-                    user.sendData( "FML|HS", pluginMessage.getData() );
+                    // Same as above
+                    if (user.getServer() == null) {
+                        user.getForgeHandshakeHandler().setServerIdList( pluginMessage );
+                    } else {
+                        this.idList = pluginMessage;
+                    }
                     ch.write( new PluginMessage( "FML|HS", new byte[]{ -1, 2 }, true ) );
                     break;
             }

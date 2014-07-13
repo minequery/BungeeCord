@@ -35,6 +35,8 @@ import net.md_5.bungee.api.tab.TabListHandler;
 import net.md_5.bungee.chat.ComponentSerializer;
 import net.md_5.bungee.connection.InitialHandler;
 import net.md_5.bungee.entitymap.EntityMap;
+import net.md_5.bungee.forge.ForgeClientHandshake;
+import net.md_5.bungee.forge.ForgeConstants;
 import net.md_5.bungee.netty.ChannelWrapper;
 import net.md_5.bungee.netty.HandlerBoss;
 import net.md_5.bungee.netty.PacketHandler;
@@ -110,6 +112,9 @@ public final class UserConnection implements ProxiedPlayer
     private Locale locale;
     /*========================================================================*/
     @Getter
+    private ForgeClientHandshake forgeHandshakeHandler;
+    
+    @Getter
     private byte[] fmlModData;
     
     /**
@@ -144,6 +149,10 @@ public final class UserConnection implements ProxiedPlayer
 
     public void init()
     {
+        // Create the Forge handshake handler, and fire it. Ignored by vanilla clients.
+        this.forgeHandshakeHandler = new ForgeClientHandshake(this);
+        this.forgeHandshakeHandler.startHandshake();
+        
         this.entityRewrite = EntityMap.getEntityMap( getPendingConnection().getVersion() );
 
         this.displayName = name;
@@ -501,13 +510,5 @@ public final class UserConnection implements ProxiedPlayer
             delayedServerPacketHandler = null;
             delayedServerPacket = null;
         }
-    }
-    
-    public void sendVanillaForgeData() {
-        // Send empty mod and ID list.
-        this.unsafe().sendPacket( PacketConstants.FML_EMPTY_MOD_LIST );
-
-        // TODO: Detect version of Minecraft. Currently only supports Forge on 1.7
-        this.unsafe().sendPacket( PacketConstants.FML_DEFAULT_IDS_17 );
     }
 }
