@@ -268,7 +268,7 @@ public class ServerConnector extends PacketHandler
     @Override
     public void handle(PluginMessage pluginMessage) throws Exception
     {
-        if(pluginMessage.getTag().equals("FML|HS"))
+        if(pluginMessage.getTag().equals(ForgeConstants.forgeTag))
         {
             // If we get here, we have a FML server. Flag it up.
             // We'll handle the user handshake later.
@@ -326,7 +326,7 @@ public class ServerConnector extends PacketHandler
                     } else {
                         ch.write( ForgeConstants.FML_REGISTER );
                         ch.write( ForgeConstants.FML_START_SERVER_HANDSHAKE );
-                        ch.write( new PluginMessage( "FML|HS", user.getFmlModData(), true ) );
+                        ch.write( new PluginMessage( ForgeConstants.forgeTag, user.getFmlModData(), true ) );
                     }
 
                     break;
@@ -340,7 +340,7 @@ public class ServerConnector extends PacketHandler
                         // have been any mod rejections, and we don't want to put the client in a weird state.
                         this.modList = pluginMessage;
                     }
-                    ch.write( new PluginMessage( "FML|HS", new byte[]{ -1, 2 }, true ) );
+                    ch.write( new PluginMessage( ForgeConstants.forgeTag, new byte[]{ -1, 2 }, true ) );
                     break;
                 case 3:
                     // IdList
@@ -350,7 +350,7 @@ public class ServerConnector extends PacketHandler
                     } else {
                         this.idList = pluginMessage;
                     }
-                    ch.write( new PluginMessage( "FML|HS", new byte[]{ -1, 2 }, true ) );
+                    ch.write( new PluginMessage( ForgeConstants.forgeTag, new byte[]{ -1, 2 }, true ) );
                     break;
             }
             throw CancelSendSignal.INSTANCE;

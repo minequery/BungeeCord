@@ -8,13 +8,15 @@ public class ForgeConstants
     private static byte[] vanillaBlocks17 = null;
 
     // Forge
-    public static final PluginMessage FML_REGISTER = new PluginMessage( "REGISTER", "FML|HS".getBytes(), false );
-    public static final PluginMessage FML_START_CLIENT_HANDSHAKE = new PluginMessage( "FML|HS", new byte[] { 0, 1 }, false );
-    public static final PluginMessage FML_START_SERVER_HANDSHAKE = new PluginMessage( "FML|HS", new byte[] { 1, 1 }, false );
-    public static final PluginMessage FML_EMPTY_MOD_LIST = new PluginMessage( "FML|HS", new byte[] { 2, 0 }, false );
+    public static final String forgeTag = "FML|HS";
+    
+    public static final PluginMessage FML_REGISTER = new PluginMessage( "REGISTER", forgeTag.getBytes(), false );
+    public static final PluginMessage FML_START_CLIENT_HANDSHAKE = new PluginMessage( forgeTag, new byte[] { 0, 1 }, false );
+    public static final PluginMessage FML_START_SERVER_HANDSHAKE = new PluginMessage( forgeTag, new byte[] { 1, 1 }, false );
+    public static final PluginMessage FML_EMPTY_MOD_LIST = new PluginMessage( forgeTag, new byte[] { 2, 0 }, false );
     
     // Vanilla blocks. Obtained though packet sniffing. See the ForgeConstants class
-    public static final PluginMessage FML_DEFAULT_IDS_17 = new PluginMessage( "FML|HS", getVanillaBlocks17(), true);
+    public static final PluginMessage FML_DEFAULT_IDS_17 = new PluginMessage( forgeTag, getVanillaBlocks17(), true);
     
     /**
      * Gets the Vanilla Blocks ID list for Minecraft 1.7 from the ForgeConstants class,

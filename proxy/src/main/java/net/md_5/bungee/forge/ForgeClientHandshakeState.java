@@ -123,7 +123,8 @@ enum ForgeClientHandshakeState implements IForgeClientPacketHandler<ForgeClientH
         {
             // Ack.
             if (message.getData()[0] == -1) {
-                // We got acceptance - so we are done!
+                // We got acceptance - so send an "ack" to put the client into the COMPLETE state, and we are done!
+                con.unsafe().sendPacket( new PluginMessage("FML|HS", new byte[] { -1, 0 }, true ));
                 return DONE;
             }
             

@@ -24,7 +24,7 @@ public class ForgeClientHandshake
      * @param message The Forge Handshake packet to handle.
      */
     public void handle(PluginMessage message) throws IllegalArgumentException {
-        if (!message.getTag().equalsIgnoreCase( "FML|HS" )) {
+        if (!message.getTag().equalsIgnoreCase( ForgeConstants.forgeTag )) {
             throw new IllegalArgumentException("Expecting a Forge Handshake packet.");
         }
         
@@ -80,7 +80,7 @@ public class ForgeClientHandshake
      * @throws IllegalArgumentException Thrown if the {@link PluginMessage} was not as expected.
      */
     public void setServerModList(PluginMessage modList) throws IllegalArgumentException {
-        if (!modList.getTag().equalsIgnoreCase( "FML|HS" ) || modList.getData()[0] != 2) {
+        if (!modList.getTag().equalsIgnoreCase( ForgeConstants.forgeTag ) || modList.getData()[0] != 2) {
             throw new IllegalArgumentException("modList");
         }
         
@@ -100,7 +100,7 @@ public class ForgeClientHandshake
      * @throws IllegalArgumentException Thrown if the {@link PluginMessage} was not as expected.
      */
     public void setServerIdList(PluginMessage idList) throws IllegalArgumentException {
-        if (!idList.getTag().equalsIgnoreCase( "FML|HS" ) || idList.getData()[0] != 3) {
+        if (!idList.getTag().equalsIgnoreCase( ForgeConstants.forgeTag ) || idList.getData()[0] != 3) {
             throw new IllegalArgumentException("idList");
         }
         
