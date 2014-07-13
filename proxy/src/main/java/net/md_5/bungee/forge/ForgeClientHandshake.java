@@ -2,6 +2,7 @@ package net.md_5.bungee.forge;
 
 import lombok.RequiredArgsConstructor;
 import net.md_5.bungee.UserConnection;
+import net.md_5.bungee.protocol.ProtocolConstants;
 import net.md_5.bungee.protocol.packet.LoginSuccess;
 import net.md_5.bungee.protocol.packet.PluginMessage;
 
@@ -62,7 +63,11 @@ public class ForgeClientHandshake
         state = ForgeClientHandshakeState.START;
 
         // Send a LoginSuccess packet to reset the handshake.
-        con.unsafe().sendPacket( new LoginSuccess(con.getName(), con.getUUID()) );
+        if (con.getPendingConnection().getVersion() >= ProtocolConstants.MINECRAFT_1_7_6) {
+            con.unsafe().sendPacket(new LoginSuccess(con.getUniqueId().toString(), con.getName())); // With dashes in between
+        } else {
+            con.unsafe().sendPacket(new LoginSuccess(con.getUUID(), con.getName())); // Without dashes, for older clients.
+        }
         
         // Now start the handshake again
         startHandshake();
