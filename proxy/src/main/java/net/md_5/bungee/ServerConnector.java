@@ -20,6 +20,7 @@ import net.md_5.bungee.connection.CancelSendSignal;
 import net.md_5.bungee.connection.DownstreamBridge;
 import net.md_5.bungee.connection.LoginResult;
 import net.md_5.bungee.forge.ForgeConstants;
+import net.md_5.bungee.forge.ForgeServerHandshake;
 import net.md_5.bungee.netty.ChannelWrapper;
 import net.md_5.bungee.netty.HandlerBoss;
 import net.md_5.bungee.netty.PacketHandler;
@@ -45,6 +46,7 @@ public class ServerConnector extends PacketHandler
     private final BungeeServerInfo target;
     private State thisState = State.LOGIN_SUCCESS;
     
+    private ForgeServerHandshake handshakeHandler;
     private PluginMessage modList = ForgeConstants.FML_EMPTY_MOD_LIST;
     private PluginMessage idList = ForgeConstants.FML_DEFAULT_IDS_17;
 
@@ -79,6 +81,9 @@ public class ServerConnector extends PacketHandler
     public void connected(ChannelWrapper channel) throws Exception
     {
         this.ch = channel;
+
+        // Enable the forge handshake handler
+        this.handshakeHandler = new ForgeServerHandshake(user, ch, target, bungee);
 
         Handshake originalHandshake = user.getPendingConnection().getHandshake();
         Handshake copiedHandshake = new Handshake( originalHandshake.getProtocolVersion(), originalHandshake.getHost(), originalHandshake.getPort(), 2 );
@@ -271,88 +276,8 @@ public class ServerConnector extends PacketHandler
         if(pluginMessage.getTag().equals(ForgeConstants.forgeTag))
         {
             // If we get here, we have a FML server. Flag it up.
-            // We'll handle the user handshake later.
             serverIsForge = true;
-            
-            byte state = pluginMessage.getData()[ 0 ];
-            switch ( state )
-            {
-                case 0:
-                    // Server hello
-                    if (!user.isForgeUser()) {
-                        user.setDelayedServerPacket( pluginMessage );
-                        user.setDelayedServerPacketHandler( this );
-
-                        // If we cannot identify them as a forge user, then wait a couple of seconds, as we might be waiting for the 
-                        // user to complete the forge handshake. 
-                        Timer timer = new Timer();
-                        timer.schedule(new TimerTask() {
-
-                            @Override
-                            public void run()
-                            {
-                                // Kill the timer so that it does not run again.
-                                Timer timer = user.getDelayedServerPacketTimeoutTimer();
-                                if (timer != null) {
-                                    timer.cancel();
-                                }
-
-                                user.setDelayedServerPacketTimeoutTimer( null );
-
-                                // If this wasn't cancelled, then continue anyway.
-                                if (user.isForgeUser()) {
-                                    return;
-                                }
-
-                                try {
-                                    // If the user is not a mod user, then throw them off.
-                                    user.getPendingConnects().remove( target );
-                                    ch.close();
-
-                                    String message = bungee.getTranslation( "connect_kick" ) + target.getName() + ": " + bungee.getTranslation( "connect_kick_modded" );
-                                    if ( user.getServer() == null ) {
-                                        user.disconnect( message );
-                                    } else {
-                                        user.sendMessage( ChatColor.RED + message );
-                                    }
-                                }
-                                finally
-                                {
-                                }
-                            }
-                        }, 2000); // TODO: Is this reasonable?
-                        
-                        user.setDelayedServerPacketTimeoutTimer( timer );
-                    } else {
-                        ch.write( ForgeConstants.FML_REGISTER );
-                        ch.write( ForgeConstants.FML_START_SERVER_HANDSHAKE );
-                        ch.write( new PluginMessage( ForgeConstants.forgeTag, user.getFmlModData(), true ) );
-                    }
-
-                    break;
-                case 2:
-                    // ModList
-                    if (user.getServer() == null) {
-                        // Connecting to the initial server - send handshake as normal.
-                        user.getForgeHandshakeHandler().setServerModList( pluginMessage );
-                    } else {
-                        // If we are switching servers, we store the message temporarily, as at this point, we do not know if there 
-                        // have been any mod rejections, and we don't want to put the client in a weird state.
-                        this.modList = pluginMessage;
-                    }
-                    ch.write( new PluginMessage( ForgeConstants.forgeTag, new byte[]{ -1, 2 }, true ) );
-                    break;
-                case 3:
-                    // IdList
-                    // Same as above
-                    if (user.getServer() == null) {
-                        user.getForgeHandshakeHandler().setServerIdList( pluginMessage );
-                    } else {
-                        this.idList = pluginMessage;
-                    }
-                    ch.write( new PluginMessage( ForgeConstants.forgeTag, new byte[]{ -1, 2 }, true ) );
-                    break;
-            }
+            handshakeHandler.handle( pluginMessage );
             throw CancelSendSignal.INSTANCE;
         }
     }

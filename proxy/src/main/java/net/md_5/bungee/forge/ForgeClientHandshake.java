@@ -58,8 +58,6 @@ public class ForgeClientHandshake
      * Sends a LoginSuccess packet to the Forge client, to reset the handshake state.
      */
     public void resetHandshake() {
-        serverModList = null;
-        serverIdList = null;
         state = ForgeClientHandshakeState.START;
 
         // Send a LoginSuccess packet to reset the handshake.

@@ -5,7 +5,7 @@ import net.md_5.bungee.UserConnection;
 import net.md_5.bungee.protocol.packet.PluginMessage;
 
 /**
- * Handshake sequence manager for Forge. Modelled after the Forge implementation.
+ * Handshake sequence manager for the Forge Client. Modelled after the Forge implementation.
  * See https://github.com/MinecraftForge/FML/blob/master/src/main/java/cpw/mods/fml/common/network/handshake/FMLHandshakeServerState.java
  */
 enum ForgeClientHandshakeState implements IForgeClientPacketHandler<ForgeClientHandshakeState>
@@ -124,7 +124,7 @@ enum ForgeClientHandshakeState implements IForgeClientPacketHandler<ForgeClientH
             // Ack.
             if (message.getData()[0] == -1) {
                 // We got acceptance - so send an "ack" to put the client into the COMPLETE state, and we are done!
-                con.unsafe().sendPacket( new PluginMessage("FML|HS", new byte[] { -1, 0 }, true ));
+                con.unsafe().sendPacket( ForgeConstants.FML_ACK );
                 return DONE;
             }
             

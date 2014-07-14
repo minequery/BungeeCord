@@ -3,6 +3,10 @@ package net.md_5.bungee.forge;
 import net.md_5.bungee.UserConnection;
 import net.md_5.bungee.protocol.packet.PluginMessage;
 
+/**
+ * An interface that defines a Forge Handshake Client packet.
+ * @param <S> The State to transition to.
+ */
 public interface IForgeClientPacketHandler<S>
 {
     /**

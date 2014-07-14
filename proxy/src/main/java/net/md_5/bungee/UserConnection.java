@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
 import java.util.logging.Level;
 import lombok.AccessLevel;
@@ -23,6 +24,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import net.md_5.bungee.api.Callback;
+import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -37,10 +39,12 @@ import net.md_5.bungee.connection.InitialHandler;
 import net.md_5.bungee.entitymap.EntityMap;
 import net.md_5.bungee.forge.ForgeClientHandshake;
 import net.md_5.bungee.forge.ForgeConstants;
+import net.md_5.bungee.forge.IForgePacketSender;
 import net.md_5.bungee.netty.ChannelWrapper;
 import net.md_5.bungee.netty.HandlerBoss;
 import net.md_5.bungee.netty.PacketHandler;
 import net.md_5.bungee.netty.PipelineUtils;
+import net.md_5.bungee.protocol.AbstractPacketHandler;
 import net.md_5.bungee.protocol.DefinedPacket;
 import net.md_5.bungee.protocol.MinecraftDecoder;
 import net.md_5.bungee.protocol.MinecraftEncoder;
@@ -113,30 +117,12 @@ public final class UserConnection implements ProxiedPlayer
     /*========================================================================*/
     @Getter
     private ForgeClientHandshake forgeHandshakeHandler;
-    
+
     @Getter
     private byte[] fmlModData;
-    
-    /**
-     * Holds a PluginMessage that needs to be processed once Forge has started
-     * its handshake.
-     */
-    @Setter(AccessLevel.PACKAGE)
-    private PluginMessage delayedServerPacket = null;
-    
-    /**
-     * Holds the class that will handler the PluginMessage that needs to be processed 
-     * once Forge has started its handshake.
-     */
-    @Setter(AccessLevel.PACKAGE)
-    private PacketHandler delayedServerPacketHandler = null;
-    
-    /**
-     * Holds the @{link Timer} object that handles the Forge timeout.
-     */
-    @Getter
-    @Setter(AccessLevel.PACKAGE)
-    private Timer delayedServerPacketTimeoutTimer = null;
+
+    @Setter
+    private IForgePacketSender delayedPacketSender = null;
     /*========================================================================*/
     private final Unsafe unsafe = new Unsafe()
     {
@@ -150,9 +136,9 @@ public final class UserConnection implements ProxiedPlayer
     public void init()
     {
         // Create the Forge handshake handler, and fire it. Ignored by vanilla clients.
-        this.forgeHandshakeHandler = new ForgeClientHandshake(this);
+        this.forgeHandshakeHandler = new ForgeClientHandshake( this );
         this.forgeHandshakeHandler.startHandshake();
-        
+
         this.entityRewrite = EntityMap.getEntityMap( getPendingConnection().getVersion() );
 
         this.displayName = name;
@@ -481,34 +467,19 @@ public final class UserConnection implements ProxiedPlayer
     {
         return ( locale == null && settings != null ) ? locale = Locale.forLanguageTag( settings.getLocale().replaceAll( "_", "-" ) ) : locale;
     }
-    
-    public boolean isForgeUser() 
+
+    public boolean isForgeUser()
     {
         return fmlModData != null;
     }
-    
-    public void setFmlModData(byte[] value) {
+
+    public void setFmlModData(byte[] value)
+    {
         fmlModData = value;
 
         // If we have a delayed packet, process it again.
-        if (delayedServerPacketHandler != null && delayedServerPacket != null) {
-            if (delayedServerPacketTimeoutTimer != null) {
-                delayedServerPacketTimeoutTimer.cancel();
-                delayedServerPacketTimeoutTimer = null;
-            }
-            
-            try
-            {
-                delayedServerPacketHandler.handle( delayedServerPacket );
-            }
-            catch (Exception ex) {
-                // This is used to swallow the CancelSendSignal.INSTANCE exception that
-                // will occur, as we are acutally handling this outside of the Netty workflow.
-            }
-            
-            // We no longer want the reference to these packets
-            delayedServerPacketHandler = null;
-            delayedServerPacket = null;
+        if ( delayedPacketSender != null ) {
+            delayedPacketSender.send( new PluginMessage( ForgeConstants.forgeTag, value, true ) );
         }
     }
 }
