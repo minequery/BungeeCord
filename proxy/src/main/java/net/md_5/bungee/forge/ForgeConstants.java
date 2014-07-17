@@ -8,16 +8,16 @@ public class ForgeConstants
     private static byte[] vanillaBlocks17 = null;
 
     // Forge
-    public static final String forgeTag = "FML|HS";
+    public static final String FORGE_HANDSHAKE_TAG = "FML|HS";
     
-    public static final PluginMessage FML_REGISTER = new PluginMessage( "REGISTER", forgeTag.getBytes(), false );
-    public static final PluginMessage FML_ACK = new PluginMessage( forgeTag, new byte[] { -1, 0 }, false );
-    public static final PluginMessage FML_START_CLIENT_HANDSHAKE = new PluginMessage( forgeTag, new byte[] { 0, 1 }, false );
-    public static final PluginMessage FML_START_SERVER_HANDSHAKE = new PluginMessage( forgeTag, new byte[] { 1, 1 }, false );
-    public static final PluginMessage FML_EMPTY_MOD_LIST = new PluginMessage( forgeTag, new byte[] { 2, 0 }, false );
+    public static final PluginMessage FML_REGISTER = new PluginMessage( "REGISTER", FORGE_HANDSHAKE_TAG.getBytes(), false );
+    public static final PluginMessage FML_ACK = new PluginMessage( FORGE_HANDSHAKE_TAG, new byte[] { -1, 0 }, false );
+    public static final PluginMessage FML_START_CLIENT_HANDSHAKE = new PluginMessage( FORGE_HANDSHAKE_TAG, new byte[] { 0, 1 }, false );
+    public static final PluginMessage FML_START_SERVER_HANDSHAKE = new PluginMessage( FORGE_HANDSHAKE_TAG, new byte[] { 1, 1 }, false );
+    public static final PluginMessage FML_EMPTY_MOD_LIST = new PluginMessage( FORGE_HANDSHAKE_TAG, new byte[] { 2, 0 }, false );
     
     // Vanilla blocks. Obtained though packet sniffing. See the ForgeConstants class
-    public static final PluginMessage FML_DEFAULT_IDS_17 = new PluginMessage( forgeTag, getVanillaBlocks17(), true);
+    public static final PluginMessage FML_DEFAULT_IDS_17 = new PluginMessage( FORGE_HANDSHAKE_TAG, getVanillaBlocks17(), true);
     
     /**
      * Gets the Vanilla Blocks ID list for Minecraft 1.7 from the ForgeConstants class,
@@ -30,14 +30,14 @@ public class ForgeConstants
         }
         
         // Construct it once and store the bytes.
-        vanillaBlocks17 = BaseEncoding.base64().decode( ForgeConstants.base64encBlocks17 );
+        vanillaBlocks17 = BaseEncoding.base64().decode( ForgeConstants.BASE_64_ENCODED_ID_LIST );
         return vanillaBlocks17;
     }    
     
     /**
      * The Forge vanilla block ID list for minecraft 1.7, encoded as Base64.
      */
-    public static final String base64encBlocks17 = "A+YDEAFtaW5lY3JhZnQ6Z2xhc3MUFwFtaW5lY3JhZnQ6c3RvbmVfc3RhaXJzQxECbWluZWNyYWZ0OmdyYXZlbA0bAm1pbmVjcmFmdDpwb2lzb25vdXNfcG" +
+    public static final String BASE_64_ENCODED_ID_LIST = "A+YDEAFtaW5lY3JhZnQ6Z2xhc3MUFwFtaW5lY3JhZnQ6c3RvbmVfc3RhaXJzQxECbWluZWNyYWZ0OmdyYXZlbA0bAm1pbmVjcmFmdDpwb2lzb25vdXNfcG" +
         "90YXRvigMWAW1pbmVjcmFmdDptb25zdGVyX2VnZ2EYAW1pbmVjcmFmdDpicmV3aW5nX3N0YW5kdQ8CbWluZWNyYWZ0OmRpcnQDDwJtaW5lY3JhZnQ6c25vd1AWAm1pbmVjcmFmdDpyZWNvcmRfd2Fp" + 
         "dNsRDgJtaW5lY3JhZnQ6dG50LhYCbWluZWNyYWZ0Om5ldGhlcmJyaWNrlQMWAW1pbmVjcmFmdDplbWVyYWxkX29yZYEBEAJtaW5lY3JhZnQ6Y2hlc3Q2EAJtaW5lY3JhZnQ6bGV2ZXJFFQJtaW5lY3" +
         "JhZnQ6c25vd19sYXllck4VAm1pbmVjcmFmdDpvYWtfc3RhaXJzNRgBbWluZWNyYWZ0OmRpYW1vbmRfYmxvY2s5FQFtaW5lY3JhZnQ6cmVkX2Zsb3dlciYSAm1pbmVjcmFmdDpiZWRyb2NrBxsCbWlu" +

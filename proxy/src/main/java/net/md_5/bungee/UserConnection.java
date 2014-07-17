@@ -14,17 +14,13 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.UUID;
 import java.util.logging.Level;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import net.md_5.bungee.api.Callback;
-import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -37,14 +33,10 @@ import net.md_5.bungee.api.tab.TabListHandler;
 import net.md_5.bungee.chat.ComponentSerializer;
 import net.md_5.bungee.connection.InitialHandler;
 import net.md_5.bungee.entitymap.EntityMap;
-import net.md_5.bungee.forge.ForgeClientHandshake;
-import net.md_5.bungee.forge.ForgeConstants;
-import net.md_5.bungee.forge.IForgePacketSender;
+import net.md_5.bungee.forge.ForgeClientData;
 import net.md_5.bungee.netty.ChannelWrapper;
 import net.md_5.bungee.netty.HandlerBoss;
-import net.md_5.bungee.netty.PacketHandler;
 import net.md_5.bungee.netty.PipelineUtils;
-import net.md_5.bungee.protocol.AbstractPacketHandler;
 import net.md_5.bungee.protocol.DefinedPacket;
 import net.md_5.bungee.protocol.MinecraftDecoder;
 import net.md_5.bungee.protocol.MinecraftEncoder;
@@ -116,13 +108,7 @@ public final class UserConnection implements ProxiedPlayer
     private Locale locale;
     /*========================================================================*/
     @Getter
-    private ForgeClientHandshake forgeHandshakeHandler;
-
-    @Getter
-    private byte[] fmlModData;
-
-    @Setter
-    private IForgePacketSender delayedPacketSender = null;
+    private ForgeClientData forgeClientData;
     /*========================================================================*/
     private final Unsafe unsafe = new Unsafe()
     {
@@ -136,8 +122,8 @@ public final class UserConnection implements ProxiedPlayer
     public void init()
     {
         // Create the Forge handshake handler, and fire it. Ignored by vanilla clients.
-        this.forgeHandshakeHandler = new ForgeClientHandshake( this );
-        this.forgeHandshakeHandler.startHandshake();
+        this.forgeClientData = new ForgeClientData( this );
+        this.forgeClientData.startHandshake();
 
         this.entityRewrite = EntityMap.getEntityMap( getPendingConnection().getVersion() );
 
@@ -367,7 +353,7 @@ public final class UserConnection implements ProxiedPlayer
     @Override
     public void sendData(String channel, byte[] data)
     {
-        unsafe().sendPacket( new PluginMessage( channel, data, isForgeUser() ) );
+        unsafe().sendPacket( new PluginMessage( channel, data, forgeClientData.isForgeUser() ) );
     }
 
     @Override
@@ -466,20 +452,5 @@ public final class UserConnection implements ProxiedPlayer
     public Locale getLocale()
     {
         return ( locale == null && settings != null ) ? locale = Locale.forLanguageTag( settings.getLocale().replaceAll( "_", "-" ) ) : locale;
-    }
-
-    public boolean isForgeUser()
-    {
-        return fmlModData != null;
-    }
-
-    public void setFmlModData(byte[] value)
-    {
-        fmlModData = value;
-
-        // If we have a delayed packet, process it again.
-        if ( delayedPacketSender != null ) {
-            delayedPacketSender.send( new PluginMessage( ForgeConstants.forgeTag, value, true ) );
-        }
     }
 }

@@ -1,30 +1,48 @@
 package net.md_5.bungee.forge;
 
+import lombok.Getter;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import net.md_5.bungee.UserConnection;
 import net.md_5.bungee.protocol.ProtocolConstants;
 import net.md_5.bungee.protocol.packet.LoginSuccess;
 import net.md_5.bungee.protocol.packet.PluginMessage;
 
 /**
- * Handles the Forge Client handshake procedure.
+ * Handles the Forge Client data and handshake procedure.
  */
 @RequiredArgsConstructor
-public class ForgeClientHandshake
+public class ForgeClientData
 {
+    @NonNull
     private final UserConnection con;
     
+    @NonNull
     private ForgeClientHandshakeState state = ForgeClientHandshakeState.START;
     
-    private PluginMessage serverModList;
-    private PluginMessage serverIdList;
+    /**
+     * The users' mod list.
+     */
+    @Getter
+    private byte[] clientModList = null;
+    
+    /**
+     * Provides an interface that allows us to send a Forge packet to the server when
+     * the client has returned a mod list.
+     */
+    @Setter
+    private IForgePacketSender delayedPacketSender = null;
+    
+    private PluginMessage serverModList = null;
+    private PluginMessage serverIdList = null;
     
     /**
      * Handles the Forge packet.
      * @param message The Forge Handshake packet to handle.
      */
     public void handle(PluginMessage message) throws IllegalArgumentException {
-        if (!message.getTag().equalsIgnoreCase( ForgeConstants.forgeTag )) {
+        if (!message.getTag().equalsIgnoreCase( ForgeConstants.FORGE_HANDSHAKE_TAG )) {
             throw new IllegalArgumentException("Expecting a Forge Handshake packet.");
         }
         
@@ -78,7 +96,7 @@ public class ForgeClientHandshake
      * @throws IllegalArgumentException Thrown if the {@link PluginMessage} was not as expected.
      */
     public void setServerModList(PluginMessage modList) throws IllegalArgumentException {
-        if (!modList.getTag().equalsIgnoreCase( ForgeConstants.forgeTag ) || modList.getData()[0] != 2) {
+        if (!modList.getTag().equalsIgnoreCase( ForgeConstants.FORGE_HANDSHAKE_TAG ) || modList.getData()[0] != 2) {
             throw new IllegalArgumentException("modList");
         }
         
@@ -98,7 +116,7 @@ public class ForgeClientHandshake
      * @throws IllegalArgumentException Thrown if the {@link PluginMessage} was not as expected.
      */
     public void setServerIdList(PluginMessage idList) throws IllegalArgumentException {
-        if (!idList.getTag().equalsIgnoreCase( ForgeConstants.forgeTag ) || idList.getData()[0] != 3) {
+        if (!idList.getTag().equalsIgnoreCase( ForgeConstants.FORGE_HANDSHAKE_TAG ) || idList.getData()[0] != 3) {
             throw new IllegalArgumentException("idList");
         }
         
@@ -117,5 +135,22 @@ public class ForgeClientHandshake
      */
     public boolean isHandshakeComplete() {
         return state == ForgeClientHandshakeState.DONE;
+    }
+
+    /**
+     * Returns whether we know if the user is a forge user.
+     * @return <code>true</code> if the user is a forge user.
+     */
+    public boolean isForgeUser() {
+        return clientModList != null;
+    }
+    
+    public void setClientModList(byte[] value) {
+        this.clientModList = value;
+        
+        // If we have a delayed packet, process it again.
+        if ( delayedPacketSender != null ) {
+            delayedPacketSender.send( new PluginMessage( ForgeConstants.FORGE_HANDSHAKE_TAG, value, true ) );
+        }
     }
 }

@@ -19,6 +19,7 @@ import net.md_5.bungee.protocol.packet.ClientSettings;
 import net.md_5.bungee.protocol.packet.PluginMessage;
 import java.util.ArrayList;
 import java.util.List;
+import net.md_5.bungee.forge.ForgeConstants;
 import net.md_5.bungee.protocol.ProtocolConstants;
 import net.md_5.bungee.protocol.packet.TabCompleteResponse;
 
@@ -146,10 +147,10 @@ public class UpstreamBridge extends PacketHandler
         }
 
         // We handle forge handshake messages
-        if ( pluginMessage.getTag().equals( "FML|HS" ) )
+        if ( pluginMessage.getTag().equals( ForgeConstants.FORGE_HANDSHAKE_TAG ) )
         {
             // Let our forge client handler deal with this packet.
-            con.getForgeHandshakeHandler().handle( pluginMessage );
+            con.getForgeClientData().handle( pluginMessage );
             throw CancelSendSignal.INSTANCE;
         }
 

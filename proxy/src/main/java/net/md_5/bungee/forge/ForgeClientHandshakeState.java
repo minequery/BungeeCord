@@ -59,7 +59,7 @@ enum ForgeClientHandshakeState implements IForgeClientPacketHandler<ForgeClientH
                 // Mod List. The server will actually pass the mod list down to the client
                 // (from the FML server, or the empty mod list from Bungee), so no need to send it
                 // here. The "setFmlModData" method will set it all in motion.
-                con.setFmlModData(message.getData());
+                con.getForgeClientData().setClientModList(message.getData());
                
                 // We are yet to get a mod list. Once we get one, it'll get fired by the send method.
                 return SENDMODLIST;

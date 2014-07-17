@@ -20,7 +20,7 @@ import net.md_5.bungee.connection.CancelSendSignal;
 import net.md_5.bungee.connection.DownstreamBridge;
 import net.md_5.bungee.connection.LoginResult;
 import net.md_5.bungee.forge.ForgeConstants;
-import net.md_5.bungee.forge.ForgeServerHandshake;
+import net.md_5.bungee.forge.ForgeServer;
 import net.md_5.bungee.netty.ChannelWrapper;
 import net.md_5.bungee.netty.HandlerBoss;
 import net.md_5.bungee.netty.PacketHandler;
@@ -46,7 +46,7 @@ public class ServerConnector extends PacketHandler
     private final BungeeServerInfo target;
     private State thisState = State.LOGIN_SUCCESS;
     
-    private ForgeServerHandshake handshakeHandler;
+    private ForgeServer handshakeHandler;
     private PluginMessage modList = ForgeConstants.FML_EMPTY_MOD_LIST;
     private PluginMessage idList = ForgeConstants.FML_DEFAULT_IDS_17;
 
@@ -83,7 +83,7 @@ public class ServerConnector extends PacketHandler
         this.ch = channel;
 
         // Enable the forge handshake handler
-        this.handshakeHandler = new ForgeServerHandshake(user, ch, target, bungee);
+        this.handshakeHandler = new ForgeServer(user, ch, target, bungee);
 
         Handshake originalHandshake = user.getPendingConnection().getHandshake();
         Handshake copiedHandshake = new Handshake( originalHandshake.getProtocolVersion(), originalHandshake.getHost(), originalHandshake.getPort(), 2 );
@@ -152,15 +152,15 @@ public class ServerConnector extends PacketHandler
 
         if ( user.getServer() == null )
         {
-            if (!serverIsForge && !user.getForgeHandshakeHandler().isHandshakeComplete()) {
+            if (!serverIsForge && !user.getForgeClientData().isHandshakeComplete()) {
                 // Set the mod and ID list data for the forge handshake. If we are
                 // logging onto a Vanilla server, we can't assume that the user isn't Forge,
                 // and that the handshake will have completed by now, so set it for everyone.
                 //
                 // If the user is forge, then we have to do the handshake much earlier. See the 
                 // plugin message handler.
-                user.getForgeHandshakeHandler().setServerModList( modList );
-                user.getForgeHandshakeHandler().setServerIdList( idList );
+                user.getForgeClientData().setServerModList( modList );
+                user.getForgeClientData().setServerIdList( idList );
             }
                     
             // Once again, first connection
@@ -180,13 +180,13 @@ public class ServerConnector extends PacketHandler
         {
             // If we already have a completed handshake, we need to reset the handshake now. We then set the
             // vanilla forge data. This should be handled automatically by the handshake handler.
-            if (user.getForgeHandshakeHandler().isHandshakeComplete()) {
-                user.getForgeHandshakeHandler().resetHandshake();
+            if (user.getForgeClientData().isHandshakeComplete()) {
+                user.getForgeClientData().resetHandshake();
                 
                 // Set the mod and ID list data for the handshake. By this point, we know that the user is a Forge user,
                 // so we just set it in these cases.
-                user.getForgeHandshakeHandler().setServerModList( modList );
-                user.getForgeHandshakeHandler().setServerIdList(idList );
+                user.getForgeClientData().setServerModList( modList );
+                user.getForgeClientData().setServerIdList(idList );
             }
             
             user.getTabList().onServerChange();
@@ -273,7 +273,7 @@ public class ServerConnector extends PacketHandler
     @Override
     public void handle(PluginMessage pluginMessage) throws Exception
     {
-        if(pluginMessage.getTag().equals(ForgeConstants.forgeTag))
+        if(pluginMessage.getTag().equals(ForgeConstants.FORGE_HANDSHAKE_TAG))
         {
             // If we get here, we have a FML server. Flag it up.
             serverIsForge = true;

@@ -13,24 +13,17 @@ import net.md_5.bungee.protocol.AbstractPacketHandler;
 import net.md_5.bungee.protocol.packet.PluginMessage;
 
 /**
- * Handles the server part of the client handshake.
+ * Contains data about the Forge server, and handles the handshake.
  */
 @RequiredArgsConstructor
-public class ForgeServerHandshake extends AbstractPacketHandler
-{
-
+public class ForgeServer extends AbstractPacketHandler {
     private final UserConnection con;
     private final ChannelWrapper ch;
 
     @Getter
     private final ServerInfo serverInfo;
     private final ProxyServer bungee;
-
-    private PluginMessage modList = null;
-
     private ForgeServerHandshakeState state = ForgeServerHandshakeState.START;
-
-    private PluginMessage clientModList = null;
 
     /**
      * Handles any {@link PluginMessage} that contains a Forge Handshake.
@@ -38,9 +31,10 @@ public class ForgeServerHandshake extends AbstractPacketHandler
      * @param message The message to handle.
      * @throws IllegalArgumentException If the wrong packet is sent down.
      */
+    @Override
     public void handle(PluginMessage message) throws IllegalArgumentException
     {
-        if ( !message.getTag().equalsIgnoreCase( ForgeConstants.forgeTag ) ) {
+        if ( !message.getTag().equalsIgnoreCase( ForgeConstants.FORGE_HANDSHAKE_TAG ) ) {
             throw new IllegalArgumentException( "Expecting a Forge Handshake packet." );
         }
 
@@ -73,18 +67,17 @@ public class ForgeServerHandshake extends AbstractPacketHandler
     /**
      * Sets the delayed response, which waits for the mod list to load.
      */
-    private void setDelayedResponse()
-    {
+    private void setDelayedResponse() {
         // If we cannot identify them as a forge user, then wait a couple of seconds, as we might be waiting for the 
         // user to complete the forge handshake. 
         final Timer timer = new Timer();
 
         // Setup the success callback
-        con.setDelayedPacketSender( new IForgePacketSender() {
+        con.getForgeClientData().setDelayedPacketSender( new IForgePacketSender() {
             @Override
             public void send(PluginMessage message) {
                 timer.cancel();
-                this.send( message );
+                ForgeServer.this.send( message );
             }
         } );
 
@@ -98,7 +91,7 @@ public class ForgeServerHandshake extends AbstractPacketHandler
                 }
 
                 // If this wasn't cancelled, then continue anyway.
-                if ( con.isForgeUser() ) {
+                if ( con.getForgeClientData().isForgeUser() ) {
                     return;
                 }
 
