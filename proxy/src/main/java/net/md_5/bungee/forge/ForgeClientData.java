@@ -13,7 +13,7 @@ import net.md_5.bungee.protocol.packet.PluginMessage;
  * Handles the Forge Client data and handshake procedure.
  */
 @RequiredArgsConstructor
-public class ForgeClientData
+public class ForgeClientData implements IForgeClientData
 {
     @NonNull
     private final UserConnection con;
@@ -41,6 +41,7 @@ public class ForgeClientData
      * Handles the Forge packet.
      * @param message The Forge Handshake packet to handle.
      */
+    @Override
     public void handle(PluginMessage message) throws IllegalArgumentException {
         if (!message.getTag().equalsIgnoreCase( ForgeConstants.FORGE_HANDSHAKE_TAG )) {
             throw new IllegalArgumentException("Expecting a Forge Handshake packet.");
@@ -64,6 +65,7 @@ public class ForgeClientData
     /**
      * Starts a Forge handshake.
      */
+    @Override
     public void startHandshake() {
         if (state == ForgeClientHandshakeState.START) {
             // For the START state, it's already part of the call. No need to provide the
@@ -75,6 +77,7 @@ public class ForgeClientData
     /**
      * Sends a LoginSuccess packet to the Forge client, to reset the handshake state.
      */
+    @Override
     public void resetHandshake() {
         state = ForgeClientHandshakeState.START;
 
@@ -95,6 +98,7 @@ public class ForgeClientData
      * @param modList The {@link PluginMessage} to send to the client containing the mod list.
      * @throws IllegalArgumentException Thrown if the {@link PluginMessage} was not as expected.
      */
+    @Override
     public void setServerModList(PluginMessage modList) throws IllegalArgumentException {
         if (!modList.getTag().equalsIgnoreCase( ForgeConstants.FORGE_HANDSHAKE_TAG ) || modList.getData()[0] != 2) {
             throw new IllegalArgumentException("modList");
@@ -115,6 +119,7 @@ public class ForgeClientData
      * @param idList The {@link PluginMessage} to send to the client containing the ID list.
      * @throws IllegalArgumentException Thrown if the {@link PluginMessage} was not as expected.
      */
+    @Override
     public void setServerIdList(PluginMessage idList) throws IllegalArgumentException {
         if (!idList.getTag().equalsIgnoreCase( ForgeConstants.FORGE_HANDSHAKE_TAG ) || idList.getData()[0] != 3) {
             throw new IllegalArgumentException("idList");
@@ -133,6 +138,7 @@ public class ForgeClientData
      * Returns whether the handshake is complete.
      * @return <code>true</code> if the handshake has been completed.
      */
+    @Override
     public boolean isHandshakeComplete() {
         return state == ForgeClientHandshakeState.DONE;
     }
@@ -141,10 +147,12 @@ public class ForgeClientData
      * Returns whether we know if the user is a forge user.
      * @return <code>true</code> if the user is a forge user.
      */
+    @Override
     public boolean isForgeUser() {
         return clientModList != null;
     }
     
+    @Override
     public void setClientModList(byte[] value) {
         this.clientModList = value;
         
@@ -152,5 +160,16 @@ public class ForgeClientData
         if ( delayedPacketSender != null ) {
             delayedPacketSender.send( new PluginMessage( ForgeConstants.FORGE_HANDSHAKE_TAG, value, true ) );
         }
+    }
+
+    /**
+     * Sets the client to the vanilla experience!
+     */
+    @Override
+    public void setVanilla() {
+        setServerModList(ForgeConstants.FML_EMPTY_MOD_LIST);
+        
+        // TODO: Minecraft version.
+        setServerIdList(ForgeConstants.FML_DEFAULT_IDS_17);
     }
 }

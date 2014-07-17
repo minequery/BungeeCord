@@ -34,6 +34,8 @@ import net.md_5.bungee.chat.ComponentSerializer;
 import net.md_5.bungee.connection.InitialHandler;
 import net.md_5.bungee.entitymap.EntityMap;
 import net.md_5.bungee.forge.ForgeClientData;
+import net.md_5.bungee.forge.IForgeClientData;
+import net.md_5.bungee.forge.VanillaForgeClientData;
 import net.md_5.bungee.netty.ChannelWrapper;
 import net.md_5.bungee.netty.HandlerBoss;
 import net.md_5.bungee.netty.PipelineUtils;
@@ -108,7 +110,7 @@ public final class UserConnection implements ProxiedPlayer
     private Locale locale;
     /*========================================================================*/
     @Getter
-    private ForgeClientData forgeClientData;
+    private IForgeClientData forgeClientData = VanillaForgeClientData.vanilla;
     /*========================================================================*/
     private final Unsafe unsafe = new Unsafe()
     {
@@ -121,9 +123,11 @@ public final class UserConnection implements ProxiedPlayer
 
     public void init()
     {
-        // Create the Forge handshake handler, and fire it. Ignored by vanilla clients.
-        this.forgeClientData = new ForgeClientData( this );
-        this.forgeClientData.startHandshake();
+        if (bungee.getConfig().isForgeSupported()) {
+            // Create the Forge handshake handler, and fire it. Ignored by vanilla clients.
+            this.forgeClientData = new ForgeClientData( this );
+            this.forgeClientData.startHandshake();
+        }
 
         this.entityRewrite = EntityMap.getEntityMap( getPendingConnection().getVersion() );
 

@@ -2,6 +2,7 @@ package net.md_5.bungee.forge;
 
 import java.util.Timer;
 import java.util.TimerTask;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import net.md_5.bungee.UserConnection;
@@ -16,11 +17,11 @@ import net.md_5.bungee.protocol.packet.PluginMessage;
  * Contains data about the Forge server, and handles the handshake.
  */
 @RequiredArgsConstructor
-public class ForgeServer extends AbstractPacketHandler {
+public class ForgeServer extends AbstractPacketHandler implements IForgeServer {
     private final UserConnection con;
     private final ChannelWrapper ch;
 
-    @Getter
+    @Getter(AccessLevel.PACKAGE)
     private final ServerInfo serverInfo;
     private final ProxyServer bungee;
     private ForgeServerHandshakeState state = ForgeServerHandshakeState.START;
@@ -51,6 +52,7 @@ public class ForgeServer extends AbstractPacketHandler {
      *
      * @return <code>true</code> if the server has started a Forge handshake.
      */
+    @Override
     public boolean isServerForge() {
         return state != ForgeServerHandshakeState.START;
     }

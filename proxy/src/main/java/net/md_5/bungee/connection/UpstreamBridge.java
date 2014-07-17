@@ -146,18 +146,19 @@ public class UpstreamBridge extends PacketHandler
             throw CancelSendSignal.INSTANCE;
         }
 
-        // We handle forge handshake messages
-        if ( pluginMessage.getTag().equals( ForgeConstants.FORGE_HANDSHAKE_TAG ) )
-        {
-            // Let our forge client handler deal with this packet.
-            con.getForgeClientData().handle( pluginMessage );
-            throw CancelSendSignal.INSTANCE;
-        }
+        if (bungee.getConfig().isForgeSupported()) {
+            // We handle forge handshake messages if forge support is enabled.
+            if (pluginMessage.getTag().equals( ForgeConstants.FORGE_HANDSHAKE_TAG ) ) {
+                // Let our forge client handler deal with this packet.
+                con.getForgeClientData().handle( pluginMessage );
+                throw CancelSendSignal.INSTANCE;
+            }
 
-        if ( con.getServer() != null && !con.getServer().isForgeServer() && pluginMessage.getData().length > Short.MAX_VALUE ) {
-            // Drop the packet if the server is not a Forge server and the message was > 32kiB (as suggested by @jk-5)
-            // Do this AFTER the mod list, so we get that even if the intial server isn't modded.
-            throw CancelSendSignal.INSTANCE;
+            if ( con.getServer() != null && !con.getServer().isForgeServer() && pluginMessage.getData().length > Short.MAX_VALUE ) {
+                // Drop the packet if the server is not a Forge server and the message was > 32kiB (as suggested by @jk-5)
+                // Do this AFTER the mod list, so we get that even if the intial server isn't modded.
+                throw CancelSendSignal.INSTANCE;
+            }
         }
 
         PluginMessageEvent event = new PluginMessageEvent( con, con.getServer(), pluginMessage.getTag(), pluginMessage.getData().clone() );
