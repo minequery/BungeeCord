@@ -111,6 +111,7 @@ public final class UserConnection implements ProxiedPlayer
     private Locale locale;
     /*========================================================================*/
     @Getter
+    @Setter
     private IForgeClientData forgeClientData = VanillaForgeClientData.vanilla;
     /*========================================================================*/
     private final Unsafe unsafe = new Unsafe()
@@ -124,12 +125,6 @@ public final class UserConnection implements ProxiedPlayer
 
     public void init()
     {
-        if (bungee.getConfig().isForgeSupported()) {
-            // Create the Forge handshake handler, and fire it. Ignored by vanilla clients.
-            this.forgeClientData = new ForgeClientData( this );
-            this.forgeClientData.startHandshake();
-        }
-
         this.entityRewrite = EntityMap.getEntityMap( getPendingConnection().getVersion() );
 
         this.displayName = name;
