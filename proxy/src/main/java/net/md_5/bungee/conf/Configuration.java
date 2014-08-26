@@ -52,7 +52,6 @@ public class Configuration implements ProxyConfig
     private int throttle = 4000;
     private boolean ipFoward;
     private Favicon favicon;
-    private boolean forgeSupported = false;
 
     public void load()
     {
@@ -78,7 +77,6 @@ public class Configuration implements ProxyConfig
         playerLimit = adapter.getInt( "player_limit", playerLimit );
         throttle = adapter.getInt( "connection_throttle", throttle );
         ipFoward = adapter.getBoolean( "ip_forward", ipFoward );
-        forgeSupported = adapter.getBoolean( "enable_forge_support", forgeSupported );
 
         disabledCommands = new CaseInsensitiveSet( (Collection<String>) adapter.getList( "disabled_commands", Arrays.asList( "disabledcommandhere" ) ) );
 
