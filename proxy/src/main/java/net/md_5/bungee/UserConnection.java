@@ -34,6 +34,7 @@ import net.md_5.bungee.api.tab.TabListHandler;
 import net.md_5.bungee.chat.ComponentSerializer;
 import net.md_5.bungee.connection.InitialHandler;
 import net.md_5.bungee.entitymap.EntityMap;
+import net.md_5.bungee.forge.ForgeClientHandshakeState;
 import net.md_5.bungee.forge.IForgeClientData;
 import net.md_5.bungee.netty.ChannelWrapper;
 import net.md_5.bungee.netty.HandlerBoss;
@@ -114,6 +115,10 @@ public final class UserConnection implements ProxiedPlayer
     @Getter
     @Setter
     private ServerConnection serverConnection;
+    @NonNull
+    @Getter
+    @Setter
+    private ForgeClientHandshakeState state = ForgeClientHandshakeState.START;
     /*========================================================================*/
     private final Unsafe unsafe = new Unsafe()
     {
