@@ -34,6 +34,7 @@ import net.md_5.bungee.api.tab.TabListHandler;
 import net.md_5.bungee.chat.ComponentSerializer;
 import net.md_5.bungee.connection.InitialHandler;
 import net.md_5.bungee.entitymap.EntityMap;
+import net.md_5.bungee.forge.ForgeClientData;
 import net.md_5.bungee.forge.ForgeClientHandshakeState;
 import net.md_5.bungee.forge.IForgeClientData;
 import net.md_5.bungee.forge.IForgeServer;
@@ -149,6 +150,8 @@ public final class UserConnection implements ProxiedPlayer
         {
             addGroups( s );
         }
+
+        forgeClientData = new ForgeClientData( this );
     }
 
     @Override
